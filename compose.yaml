@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:17
+    container_name: msa-postgres
+    environment:
+      POSTGRES_DB: msa_project
+      POSTGRES_USER: msa_user
+      POSTGRES_PASSWORD: 1234
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+volumes:
+  postgres-data:
