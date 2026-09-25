@@ -2,14 +2,12 @@ package dev.project.boundedContext.post.domain;
 
 import dev.project.boundedContext.member.domain.Member;
 import dev.project.global.jpa.entity.BaseIdAndTime;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.ManyToOne;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
+@Table(name = "POST_POST_COMMENT")
 @NoArgsConstructor
 @Getter
 public class PostComment extends BaseIdAndTime {
