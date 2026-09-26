@@ -1,8 +1,5 @@
 package dev.project.boundedContext.post.app;
 
-import dev.project.boundedContext.member.app.MemberFacade;
-import dev.project.boundedContext.member.domain.Member;
-import dev.project.boundedContext.member.in.ApiV1MemberController;
 import dev.project.boundedContext.post.domain.Post;
 import dev.project.boundedContext.post.domain.PostMember;
 import dev.project.boundedContext.post.out.PostRepository;

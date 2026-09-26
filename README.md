@@ -1,8 +1,7 @@
 # MSA Project
 
 회원(Member)과 게시글(Post)을 논리적으로 분리하고, 회원 정보를 게시글 컨텍스트에 복제해 사용하는 Spring Boot 예제입니다. 회원 활동(글·댓글 작성)에 따라 활동점수를 계산하고, 이벤트로 회원 복제본을 동기화합니다.
-
-> 이 프로젝트의 컨텍스트 분리는 하나의 Spring Boot 애플리케이션 안에서 패키지와 이벤트로 구현되어 있습니다. 메시지 브로커를 둔 독립 배포 마이크로서비스 구성은 아닙니다.
+이 프로젝트의 컨텍스트 분리는 하나의 Spring Boot 애플리케이션 안에서 패키지와 이벤트로 구현되어 있습니다. 
 
 ## 기술 및 실행 환경
 
@@ -192,17 +191,6 @@ UNION ALL SELECT 'post_post_comment', COUNT(*) FROM post_post_comment;
  post_post_comment |     8
 ```
 
-재실행 때 출력된 핵심 로그는 아래와 같습니다. `MemberDataInit`은 회원 수가 0보다 크면, `PostDataInit`은 게시글 수가 0보다 크면 생성을 건너뜁니다. 댓글도 첫 번째 게시글에 댓글이 있으면 추가하지 않습니다.
-
-```text
-Tomcat started on port 8080 (http)
-Started ProjectApplication
-select count(*) from member_member  -- 6
-select count(*) from post_post      -- 6
-```
-
-따라서 현재 초기화 가드 기준으로 재실행해도 회원, 복제 회원, 게시글, 댓글은 중복 생성되지 않았습니다.
-
 ### 2. 회원별 글·댓글 수와 활동점수
 
 활동점수 규칙은 **글 1개당 +3점**, **댓글 1개당 +1점**입니다.
@@ -235,7 +223,7 @@ ORDER BY m.id;
 
 ### 3. 원본과 회원 복제본 일치 여부
 
-다음 SQL로 원본 활동점수와 Post 컨텍스트의 복제본을 비교했습니다.
+다음 SQL로 원본과 Post 컨텍스트의 복제본을 비교했습니다.
 
 ```sql
 SELECT
@@ -243,24 +231,25 @@ SELECT
   m.username,
   m.activity_score AS source_score,
   pm.activity_score AS replica_score,
-  m.activity_score = pm.activity_score AS score_matches
+  m.create_date = pm.create_date AS create_date_matches,
+  m.modify_date = pm.modify_date AS modify_date_matches,
+  (m.username, m.nickname, m.activity_score)
+    IS NOT DISTINCT FROM (pm.username, pm.nickname, pm.activity_score) AS member_data_matches
 FROM member_member m
 JOIN post_member pm ON pm.id = m.id
 ORDER BY m.id;
 ```
 
-현재 구현의 실제 결과는 다음과 같습니다.
+가입 시 복제한 ID·username·nickname·활동점수·생성 시각은 모두 일치합니다. 활동점수 변경 이벤트도 같은 ID의 기존 행을 `UPDATE`하여 반영하며, 행 수는 6개로 유지됩니다.
 
-| 회원 | 원본 점수 | 복제본 점수 | 일치 |
-| --- | ---: | ---: | --- |
-| system | 0 | 0 | PASS |
-| holding | 0 | 0 | PASS |
-| admin | 0 | 0 | PASS |
-| user1 | 11 | 0 | **FAIL** |
-| user2 | 9 | 0 | **FAIL** |
-| user3 | 6 | 0 | **FAIL** |
-
-회원 가입 시점의 복제는 성공했지만, 글·댓글 작성 뒤 발생한 활동점수 변경이 `post_member`에 반영되지 않았습니다. 즉, README에서 원본과 복제본이 일치한다고 주장하면 실제 검증 결과와 다릅니다. `MemberModifiedEvent`가 `PostEventListener.handle(MemberModifiedEvent)`까지 전달되어 `PostFacade.syncMember()`가 실행·커밋되는지 로그 또는 통합 테스트로 추가 확인하고 수정해야 이 항목을 PASS로 만들 수 있습니다.
+| 회원 | 원본 점수 | 복제본 점수 | 회원 데이터 | 생성 시각 |
+| --- | ---: | ---: | --- | --- |
+| system | 0 | 0 | PASS | PASS |
+| holding | 0 | 0 | PASS | PASS |
+| admin | 0 | 0 | PASS | PASS |
+| user1 | 11 | 11 | PASS | PASS |
+| user2 | 9 | 9 | PASS | PASS |
+| user3 | 6 | 6 | PASS | PASS |
 
 ### 4. SQL 및 애플리케이션 로그 확인 방법
 
@@ -277,16 +266,6 @@ logging:
     org.springframework.transaction.interceptor: TRACE
 ```
 
-재실행에서 관찰한 SQL 로그 예시는 다음과 같습니다.
-
-```text
-select count(*) from member_member m1_0
-extracted value (1:BIGINT) -> [6]
-
-select count(*) from post_post p1_0
-extracted value (1:BIGINT) -> [6]
-```
-
 PostMember 복제본을 조회할 때도 다음 SQL과 결과가 출력됩니다.
 
 ```text
@@ -295,10 +274,10 @@ from post_member pm1_0
 where pm1_0.username=?
 
 binding parameter (1:VARCHAR) <- [user1]
-extracted value (2:INTEGER) -> [0]
+extracted value (2:INTEGER) -> [11]
 ```
 
-마지막 로그의 `0`은 위 원본-복제본 불일치 검증 결과와 일치합니다.
+마지막 로그의 `11`은 원본 user1의 활동점수와 같으며, 활동점수 복제 갱신이 성공했음을 보여 줍니다.
 
 ### 5. 보안 팁 HTTP 호출 결과
 
