@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Getter
 public class PostMember extends ReplicaMember {
-    public PostMember(String username, String password, String nickname, int activityScore) {
+    public PostMember(String username, String password, String nickname) {
         super(username, password, nickname);
     }
 }

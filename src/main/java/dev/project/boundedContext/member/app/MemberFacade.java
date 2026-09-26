@@ -22,16 +22,19 @@ public class MemberFacade {
         return memberRepository.count();
     }
 
+    // 회원가입
     @Transactional
     public RsData<Member> join(String username, String password, String nickname) {
         return memberJoinUseCase.join(username, password, nickname);
     }
 
+    // 회원명 조회
     @Transactional(readOnly = true)
     public Optional<Member> findByUsername(String username) {
         return memberRepository.findByUsername(username);
     }
 
+    // 회원ID 조회
     @Transactional(readOnly = true)
     public Optional<Member> findById(int id) {
         return memberRepository.findById(id);
