@@ -2,6 +2,7 @@ package dev.project.boundedContext.post.in;
 
 import dev.project.boundedContext.post.app.PostFacade;
 import dev.project.shared.member.event.MemberJoinedEvent;
+import dev.project.shared.member.event.MemberModifiedEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +20,13 @@ public class PostEventListener {
     @TransactionalEventListener(phase = AFTER_COMMIT)
     @Transactional(propagation = REQUIRES_NEW)
     public void handle(MemberJoinedEvent event) {
+        postFacade.syncMember(event.getMember());
+    }
+
+    // 회원 수정 이벤트 발생시, postMember 동기화
+    @TransactionalEventListener(phase = AFTER_COMMIT)
+    @Transactional(propagation = REQUIRES_NEW)
+    public void handle(MemberModifiedEvent event) {
         postFacade.syncMember(event.getMember());
     }
 }

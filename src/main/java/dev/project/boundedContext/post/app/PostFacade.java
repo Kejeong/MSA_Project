@@ -1,6 +1,5 @@
 package dev.project.boundedContext.post.app;
 
-import dev.project.boundedContext.member.domain.Member;
 import dev.project.boundedContext.post.domain.Post;
 import dev.project.boundedContext.post.domain.PostMember;
 import dev.project.boundedContext.post.out.PostMemberRepository;
@@ -27,7 +26,7 @@ public class PostFacade {
 
     // 글 작성
     @Transactional
-    public RsData<Post> write(Member author, String title, String content) {
+    public RsData<Post> write(PostMember author, String title, String content) {
         return postWriteUseCase.write(author, title, content);
     }
 
@@ -41,15 +40,21 @@ public class PostFacade {
     @Transactional
     public PostMember syncMember(MemberDto member) {
         PostMember _member = new PostMember(
+                member.getId(),
+                member.getCreateDate(),
+                member.getModifyDate(),
                 member.getUsername(),
                 "",
-                member.getNickname()
+                member.getNickname(),
+                member.getActivityScore()
         );
 
-        _member.setId(member.getId());
-        _member.setCreateDate(member.getCreateDate());
-        _member.setModifyDate(member.getModifyDate());
-
         return postMemberRepository.save(_member);
+    }
+
+    // 회원명 조회
+    @Transactional(readOnly = true)
+    public Optional<PostMember> findMemberByUsername(String username) {
+        return postMemberRepository.findByUsername(username);
     }
 }

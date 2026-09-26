@@ -1,8 +1,8 @@
 package dev.project.boundedContext.member.domain;
 
-import dev.project.global.jpa.entity.BaseIdAndTime;
 import dev.project.shared.member.domain.SourceMember;
-import jakarta.persistence.Column;
+import dev.project.shared.member.dto.MemberDto;
+import dev.project.shared.member.event.MemberModifiedEvent;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import lombok.Getter;
@@ -19,7 +19,12 @@ public class Member extends SourceMember {
 
     // 활동점수 증가
     public int increaseActivityScore(int amount) {
+        if (amount == 0) return getActivityScore();
+
         setActivityScore(getActivityScore() + amount);
+
+        // 회원 수정 이벤트 발행 -> 회원의 활동점수 변경 위함
+        publishEvent(new MemberModifiedEvent(new MemberDto(this)));
 
         return getActivityScore();
     }

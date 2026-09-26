@@ -4,6 +4,7 @@ import dev.project.boundedContext.member.app.MemberFacade;
 import dev.project.boundedContext.member.domain.Member;
 import dev.project.boundedContext.member.in.ApiV1MemberController;
 import dev.project.boundedContext.post.domain.Post;
+import dev.project.boundedContext.post.domain.PostMember;
 import dev.project.boundedContext.post.out.PostRepository;
 import dev.project.global.eventPublisher.EventPublisher;
 import dev.project.global.rsData.RsData;
@@ -22,7 +23,7 @@ public class PostWriteUseCase {
 
 
     // 글 작성
-    public RsData<Post> write(Member author, String title, String content) {
+    public RsData<Post> write(PostMember author, String title, String content) {
         Post post = postRepository.save(new Post(author, title, content));
 
         // 이벤트 발행
